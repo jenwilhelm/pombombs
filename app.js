@@ -1,5 +1,6 @@
 var app = require('express')();
 var _ = require('lodash');
+var async = require('async');
 var ig = require('instagram-node').instagram();
 ig.use({access_token: process.env.IG_ACCESS_TOKEN});
 
@@ -12,25 +13,42 @@ app.get('/', function(req, res) {
 });
 
 app.get('/random', function(req, res) {
-  ig.user_media_recent(_.sample(igAccounts), function(err, pics) {
-    var randomPic = _.sample(pics);
+  ig.user_media_recent(_.sample(igAccounts), function(err, photos) {
+    var pom = _.get(_.sample(photos), 'images.standard_resolution.url');
 
     return res.json({
-      pom: randomPic.images.standard_resolution.url
+      pom: pom
     });
   });
 });
 
 app.get('/bomb', function(req, res) {
-  ig.user_media_recent(_.sample(igAccounts), function(err, pics) {
-    var imageUrlKey = 'images.standard_resolution.url';
-    var randomPics = _.map(_.take(_.shuffle(pics), 5), imageUrlKey);
+  var count = _.get(req, 'query.count', 5);
+  count = count > 100 ? 100 : count;
+
+  getAllPhotoUrls(igAccounts, function(error, photoUrls) {
+    var poms = _.take(_.shuffle(photoUrls), count);
 
     return res.json({
-      poms: randomPics
+      poms: poms
     });
   });
 });
+
+function getAllPhotoUrls(accounts, callback) {
+  var accountIds = _.clone(accounts);
+  var photoUrls = [];
+  var imageUrlKey = 'images.standard_resolution.url';
+
+  async.each(accountIds, function(accountId, done) {
+    ig.user_media_recent(accountId, function(err, photos) {
+      photoUrls = _.concat(photoUrls, _.map(photos, imageUrlKey));
+      return done();
+    });
+  }, function() {
+    return callback(null, photoUrls);
+  });
+}
 
 app.listen(app.get('port'), function() {
   console.log('Server listening on', app.get('port'));
