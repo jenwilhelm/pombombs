@@ -22,6 +22,8 @@
   },
   "homepage": "https://github.com/jenwilhelm/pombombs#readme",
   "dependencies": {
-    "express": "^4.13.4"
+    "express": "^4.13.4",
+    "instagram-node": "^0.5.8",
+    "lodash": "^4.3.0"
   }
 }
